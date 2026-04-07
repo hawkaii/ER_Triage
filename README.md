@@ -17,7 +17,15 @@ An OpenEnv environment where an AI agent triages emergency room patients using t
 
 ## Architecture
 
-![Architecture](architecture.png)
+![Architecture](pics/architecture.png)
+
+## Deployed Environment
+
+![HF Spaces](pics/environment_huggingface_spaces.png)
+
+## Inference Logs
+
+![Inference Logs](pics/inferenece_logs.png)
 
 ## Quick Start
 
@@ -137,10 +145,13 @@ The deployed space includes:
 - `reward` (float) - Reward for the last action
 - `done` (bool) - Whether the episode is complete
 
-### Reward
-The reward is calculated based on triage accuracy:
-- Correct priority assignment: `+1.0` (with bonus `+0.1` if done in ideal steps)
-- Incorrect priority assignment: `-1.0`
+### Reward (Partial Progress)
+Rewards are in `[0, 1]` with partial progress signals at each step:
+- `request_vitals`: `+0.2`
+- `ask_question`: `+0.1`
+- `assign_priority` (correct): `+0.7`
+- `assign_priority` (wrong): `+0.0`
+- Max per patient: `1.0` (vitals + question + correct priority)
 
 ## Advanced Usage
 
@@ -247,16 +258,19 @@ uvicorn server.app:app --reload
 ER_Triage/
 ├── __init__.py            # Module exports
 ├── README.md              # This file
-├── architecture.png       # Architecture diagram
 ├── openenv.yaml           # OpenEnv manifest
 ├── pyproject.toml         # Project metadata and dependencies
 ├── uv.lock                # Locked dependencies (generated)
 ├── client.py              # ERTriageEnv client
 ├── models.py              # Action and Observation models
-├── inference.py           # Rule-based agent entry point
+├── inference.py           # LLM-powered inference (OpenAI client)
+├── pics/
+│   ├── architecture.png       # Architecture diagram
+│   ├── environment_huggingface_spaces.png  # HF Spaces screenshot
+│   └── inferenece_logs.png    # Inference output logs
 ├── data/
 │   ├── __init__.py
-│   └── patients.py        # Patient dataset
+│   └── patients.py        # Patient dataset (11 patients, 3 tricky)
 └── server/
     ├── __init__.py        # Server module exports
     ├── er_triage_environment.py  # Core environment logic
