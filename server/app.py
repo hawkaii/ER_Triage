@@ -60,7 +60,7 @@ TASKS = [
         "description": "Triage 1 patient using ESI protocol",
         "difficulty": "easy",
         "max_attempts": 4,
-        "scoring": "0.0-1.0 partial credit",
+        "scoring": "partial credit strictly within (0, 1)",
         "action_schema": ERTriageAction.model_json_schema(),
     },
     {
@@ -68,7 +68,7 @@ TASKS = [
         "description": "Triage 3 patients sequentially",
         "difficulty": "medium",
         "max_attempts": 12,
-        "scoring": "0.0-1.0 partial credit",
+        "scoring": "partial credit strictly within (0, 1)",
         "action_schema": ERTriageAction.model_json_schema(),
     },
     {
@@ -76,7 +76,7 @@ TASKS = [
         "description": "Triage 1 tricky patient with misleading symptoms",
         "difficulty": "hard",
         "max_attempts": 4,
-        "scoring": "0.0-1.0 partial credit",
+        "scoring": "partial credit strictly within (0, 1)",
         "action_schema": ERTriageAction.model_json_schema(),
     },
 ]
@@ -100,16 +100,17 @@ def grade(payload: dict):
     except ImportError:
         from ..data.patients import PATIENTS
 
+    eps = 1e-6
     task_id = payload.get("task_id", "single_triage")
     patient_id = payload.get("patient_id")
     assigned_priority = payload.get("priority")
 
     if not patient_id or not assigned_priority:
-        return {"error": "patient_id and priority are required", "score": 0.0}
+        return {"error": "patient_id and priority are required", "score": eps}
 
     patient = next((p for p in PATIENTS if p["patient_id"] == patient_id), None)
     if not patient:
-        return {"error": f"Unknown patient_id: {patient_id}", "score": 0.0}
+        return {"error": f"Unknown patient_id: {patient_id}", "score": eps}
 
     ground_truth = patient["ground_truth_priority"]
     correct = assigned_priority == ground_truth

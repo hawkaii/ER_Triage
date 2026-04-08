@@ -23,19 +23,19 @@ tasks:
     description: "Triage 1 patient using ESI protocol"
     difficulty: easy
     max_attempts: 4
-    scoring: "0.0-1.0 partial credit"
+    scoring: "partial credit strictly within (0, 1)"
 
   - id: batch_triage
     description: "Triage 3 patients sequentially"
     difficulty: medium
     max_attempts: 12
-    scoring: "0.0-1.0 partial credit"
+    scoring: "partial credit strictly within (0, 1)"
 
   - id: differential_triage
     description: "Triage 1 tricky patient with misleading symptoms"
     difficulty: hard
     max_attempts: 4
-    scoring: "0.0-1.0 partial credit"
+    scoring: "partial credit strictly within (0, 1)"
 
 observation_space:
   patient_id:         "string — current patient identifier"
