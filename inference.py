@@ -39,7 +39,7 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 ENV_URL = os.getenv("ENV_URL", "https://hawkaii-er-triage.hf.space")
-TASK_NAME = os.getenv("TASK_NAME", "single_triage")
+TASK_NAME = os.getenv("TASK_NAME")  # None = run all tasks
 BENCHMARK = "er_triage"
 
 # ── Task Configuration ─────────────────────────────────────────────────────────
@@ -181,27 +181,20 @@ def get_llm_action(client: OpenAI, obs: ERTriageObservation, step: int, history:
         return ERTriageAction(action_type="request_vitals", reasoning=f"LLM error fallback: {exc}")
 
 
-# ── Main ───────────────────────────────────────────────────────────────────────
-async def main() -> None:
-    llm_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
-
-    config = TASK_CONFIG.get(TASK_NAME, TASK_CONFIG["single_triage"])
+# ── Run a single task ──────────────────────────────────────────────────────────
+async def run_task(llm_client: OpenAI, env, task_name: str) -> None:
+    """Run a single task and emit structured [START]/[STEP]/[END] logs."""
+    config = TASK_CONFIG.get(task_name, TASK_CONFIG["single_triage"])
     num_patients = config["num_patients"]
     max_steps = config["max_steps"]
-    MAX_TOTAL_REWARD = num_patients * MAX_REWARD_PER_PATIENT
+    max_total_reward = num_patients * MAX_REWARD_PER_PATIENT
 
-    if LOCAL_IMAGE_NAME:
-        env = await ERTriageEnv.from_docker_image(LOCAL_IMAGE_NAME)
-    else:
-        env = ERTriageEnv(base_url=ENV_URL)
-
-    history: List[str] = []
     rewards: List[float] = []
     steps_taken = 0
     score = 0.0
     success = False
 
-    log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
+    log_start(task=task_name, env=BENCHMARK, model=MODEL_NAME)
 
     try:
         for patient_idx in range(num_patients):
@@ -229,7 +222,6 @@ async def main() -> None:
                     q = (action.question or "")[:50]
                     action_str = f"ask_question('{q}')"
 
-                # For batch: only report done=true on the very last patient
                 is_final_done = done and (patient_idx == num_patients - 1)
 
                 log_step(
@@ -241,21 +233,38 @@ async def main() -> None:
                 )
 
                 patient_history.append(f"Step {steps_taken}: {action_str} -> reward {reward:+.2f}")
-                history.append(patient_history[-1])
 
                 if done:
                     break
 
-        score = sum(rewards) / MAX_TOTAL_REWARD if MAX_TOTAL_REWARD > 0 else 0.0
+        score = sum(rewards) / max_total_reward if max_total_reward > 0 else 0.0
         score = min(max(score, 0.0), 1.0)
         success = score >= SUCCESS_SCORE_THRESHOLD
 
+    finally:
+        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+
+
+# ── Main ───────────────────────────────────────────────────────────────────────
+async def main() -> None:
+    llm_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+
+    if LOCAL_IMAGE_NAME:
+        env = await ERTriageEnv.from_docker_image(LOCAL_IMAGE_NAME)
+    else:
+        env = ERTriageEnv(base_url=ENV_URL)
+
+    try:
+        if TASK_NAME:
+            await run_task(llm_client, env, TASK_NAME)
+        else:
+            for task_name in TASK_CONFIG:
+                await run_task(llm_client, env, task_name)
     finally:
         try:
             await env.close()
         except Exception as e:
             print(f"[DEBUG] env.close() error: {e}", flush=True)
-        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
 
 if __name__ == "__main__":
