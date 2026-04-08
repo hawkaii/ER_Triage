@@ -247,7 +247,9 @@ async def main() -> None:
                     break
 
         score = sum(rewards) / MAX_TOTAL_REWARD if MAX_TOTAL_REWARD > 0 else 0.0
-        score = min(max(score, 0.0), 1.0)
+        # Clamp to open interval (0, 1) — validator requires strictly between 0 and 1
+        eps = 1e-6
+        score = min(max(score, eps), 1.0 - eps)
         success = score >= SUCCESS_SCORE_THRESHOLD
 
     finally:
