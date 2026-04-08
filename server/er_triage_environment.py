@@ -82,7 +82,7 @@ class ERTriageEnvironment(Environment[ERTriageAction, ERTriageObservation, ERTri
     @staticmethod
     def _clamp(value: float) -> float:
         """Clamp reward/score to open interval (0, 1) as required by validator."""
-        eps = 1e-6
+        eps = 0.001
         return min(max(value, eps), 1.0 - eps)
 
     def _get_observation(self) -> ERTriageObservation:

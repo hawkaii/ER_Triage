@@ -195,7 +195,7 @@ async def run_task(llm_client: OpenAI, env: ERTriageEnv, task_name: str) -> floa
     history: List[str] = []
     rewards: List[float] = []
     steps_taken = 0
-    eps = 1e-6
+    eps = 0.001
     score = eps  # always strictly > 0 even if nothing runs
     success = False
 

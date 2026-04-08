@@ -100,7 +100,7 @@ def grade(payload: dict):
     except ImportError:
         from ..data.patients import PATIENTS
 
-    eps = 1e-6
+    eps = 0.001
     task_id = payload.get("task_id", "single_triage")
     patient_id = payload.get("patient_id")
     assigned_priority = payload.get("priority")
@@ -115,7 +115,7 @@ def grade(payload: dict):
     ground_truth = patient["ground_truth_priority"]
     correct = assigned_priority == ground_truth
     raw = 0.7 if correct else 0.0
-    eps = 1e-6
+    eps = 0.001
     score = min(max(raw, eps), 1.0 - eps)
 
     return {
