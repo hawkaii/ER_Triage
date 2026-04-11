@@ -101,7 +101,7 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
-        f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}",
+        f"[END] success={str(success).lower()} steps={steps} rewards={rewards_str}",
         flush=True,
     )
 
@@ -203,7 +203,7 @@ async def run_task(llm_client: OpenAI, env: ERTriageEnv, task_name: str) -> floa
 
     try:
         for patient_idx in range(num_patients):
-            result = await env.reset(params={"task": task_name})
+            result = await env.reset(task=task_name)
             obs = result.observation
             done = result.done
             patient_history: List[str] = []
